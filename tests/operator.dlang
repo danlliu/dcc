@@ -1,0 +1,6 @@
+a = 1;
+b = 2;
+c = a + b;
+d = c + 1;
+e = 2 + c;
+return e;

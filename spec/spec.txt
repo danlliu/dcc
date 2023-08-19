@@ -1,0 +1,32 @@
+# Terminals
+delim ;
+return return
+assign =
+num \-?[0-9]+
+ident [a-zA-Z_]+
+plus \+
+multiply \*
+%%
+# Precedence and associativity
+# <terminal> <precedence:unsigned> <associativity:left|right|none>
+plus 1 left
+multiply 2 left
+%%
+# Non-terminals
+Block
+Statement
+AssignStatement
+ReturnStatement
+Expr
+%%
+# Production rules
+Block -> Statement
+Block -> Block Statement
+Statement -> AssignStatement
+Statement -> ReturnStatement
+AssignStatement -> ident assign Expr delim
+ReturnStatement -> return Expr delim
+Expr -> num
+Expr -> ident
+Expr -> Expr plus Expr
+Expr -> Expr multiply Expr
