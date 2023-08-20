@@ -2,6 +2,7 @@
 // yadda: yacc but macro (don't ask where the a came from)
 // yet another deranged daniel automation?
 
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <map>
