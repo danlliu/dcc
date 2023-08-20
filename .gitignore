@@ -2,6 +2,7 @@
 .DS_Store
 *.dSYM
 # actual files
+src/generated/
 dcc
 dcc_debug
 yadda
