@@ -2,6 +2,7 @@
 delim ;
 return return
 if if
+else else
 lbrace \{
 rbrace \}
 assign =
@@ -40,6 +41,7 @@ Statement
 AssignStatement
 ReturnStatement
 IfStatement
+IfElseStatement
 Expr
 %%
 # Production rules
@@ -48,9 +50,11 @@ Block -> Block Statement
 Statement -> AssignStatement
 Statement -> ReturnStatement
 Statement -> IfStatement
+Statement -> IfElseStatement
 AssignStatement -> ident assign Expr delim
 ReturnStatement -> return Expr delim
 IfStatement -> if lparen Expr rparen lbrace Block rbrace
+IfElseStatement -> if lparen Expr rparen lbrace Block rbrace else lbrace Block rbrace
 Expr -> num
 Expr -> ident
 Expr -> minus num

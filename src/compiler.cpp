@@ -32,6 +32,7 @@ NO_IR(assign);
 NO_IR(delim);
 NO_IR(return);
 NO_IR(if);
+NO_IR(else);
 NO_IR(lbrace);
 NO_IR(rbrace);
 NO_IR(plus);
@@ -151,6 +152,39 @@ TO_IR(IfStatement) {
   // rbrace
   auto mergeNode = std::make_shared<IRMergeNode>();
   endIf->next = mergeNode;
+  conditionalNode->next = mergeNode;
+  return { mergeNode, NO_VR };
+}
+
+TO_IR(IfElseStatement) {
+  // 0 = if
+  // 1 = lparen
+  // 2 = Expr
+  auto [conditionIR, conditionVR] = m_children[2]->convertToIR(vsm, prev);
+  // 3 = rparen
+  // Create the IRConditionalNode
+  auto conditionalNode = std::make_shared<IRConditionalNode>(conditionVR);
+  conditionIR.lock()->next = conditionalNode;
+  // 4 = lbrace
+  auto ifCondition = std::make_shared<IRBlockStartNode>();
+  conditionalNode->trueIR = ifCondition;
+  auto [trueIR, trueVR] = m_children[5]->convertToIR(vsm, ifCondition);
+  auto endIf = std::make_shared<IRBlockEndNode>();
+  trueIR.lock()->next = endIf;
+  // 5 = Block
+  // 6 = rbrace
+  // 7 = else
+  // 8 = lbrace
+  // 9 = Block
+  auto elseCondition = std::make_shared<IRBlockStartNode>();
+  conditionalNode->falseIR = elseCondition;
+  auto [falseIR, falseVR] = m_children[9]->convertToIR(vsm, elseCondition);
+  auto endElse = std::make_shared<IRBlockEndNode>();
+  falseIR.lock()->next = endElse;
+  // 10 = rbrace
+  auto mergeNode = std::make_shared<IRMergeNode>();
+  endIf->next = mergeNode;
+  endElse->next = mergeNode;
   conditionalNode->next = mergeNode;
   return { mergeNode, NO_VR };
 }
