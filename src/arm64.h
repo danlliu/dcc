@@ -54,6 +54,8 @@ inline int evaluateOperator(int lhs, Operator op, int rhs) {
     return lhs << rhs;
   case RSHIFT:
     return lhs >> rhs;
+  default:
+    UNREACHABLE("Invalid ARM64Operation operation type");
   }
 }
 }

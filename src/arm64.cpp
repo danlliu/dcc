@@ -1,5 +1,6 @@
 
 #include "arm64.h"
+#include "macros.h"
 
 using namespace dlang;
 
@@ -30,6 +31,8 @@ std::ostream& operator<<(std::ostream& os, Operator op) {
     return os << "<<";
   case RSHIFT:
     return os << ">>";
+  default:
+    UNREACHABLE("Invalid ARM64Operation operation type");
   }
 }
 
@@ -99,6 +102,8 @@ OUTPUT_TYPE(ARM64Operation) {
       return os << "lsr " << instr.dest << ", " << ARM64TempRegister << ", " << instr.rhs << "\n";
     } else
       return os << "lsr " << instr.dest << ", " << instr.lhs << ", " << instr.rhs << "\n";
+  default:
+    UNREACHABLE("Invalid ARM64Operation operation type");
   }
 }
 
