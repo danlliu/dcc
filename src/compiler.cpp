@@ -164,13 +164,16 @@ std::shared_ptr<dlang::IRNode> Compiler::convertToIR(std::unique_ptr<dlang::ASTN
 void Compiler::compileIRToAssembly(std::shared_ptr<dlang::IRNode>&& ir, std::ostream& asm_out) {
   RegisterAllocator ra(ARM64NumFreeRegs, vsm.getNumVariables());
   ir->makeLivenessPass(vsm, ra);
-  ir->dump(std::cout);
-  std::cout << std::endl;
+  std::cerr << INFO("Generated IR:") << std::endl;
+  ir->dump(std::cerr);
+  std::cerr << std::endl << std::endl;
 
   ra.allocateRegisters();
+  std::cerr << INFO("Register allocations:") << std::endl;
   for (unsigned vr = 0; vr < vsm.getNumVariables(); ++vr) {
-    std::cout << "allocating " << vr << " to register " << ra.getAllocationFor(vr) << std::endl;
+    std::cerr << "allocating " << vr << " to register " << ra.getAllocationFor(vr) << std::endl;
   }
+  std::cerr << std::endl;
 
   ir->toAssembly(ra, asm_out);
 }
