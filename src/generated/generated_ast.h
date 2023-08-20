@@ -1,5 +1,57 @@
 #define AST_NODE_NAME_FOR_TYPE(x) ASTNode_##x
 #define AST_NODE_NAME_FOR_TYPE_STR(x) "ASTNode_" #x
+class AST_NODE_NAME_FOR_TYPE(rshift) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(rshift)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(rshift) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_rshift; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
+class AST_NODE_NAME_FOR_TYPE(lshift) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(lshift)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(lshift) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_lshift; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
+class AST_NODE_NAME_FOR_TYPE(divide) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(divide)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(divide) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_divide; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
+class AST_NODE_NAME_FOR_TYPE(bitor) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(bitor)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(bitor) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_bitor; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
 class AST_NODE_NAME_FOR_TYPE(multiply) : public ASTNode {
  public:
   AST_NODE_NAME_FOR_TYPE(multiply)(Token token)
@@ -10,6 +62,45 @@ class AST_NODE_NAME_FOR_TYPE(multiply) : public ASTNode {
     return o;
   }
   virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_multiply; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
+class AST_NODE_NAME_FOR_TYPE(bitxor) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(bitxor)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(bitxor) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_bitxor; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
+class AST_NODE_NAME_FOR_TYPE(delim) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(delim)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(delim) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_delim; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
+class AST_NODE_NAME_FOR_TYPE(minus) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(minus)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(minus) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_minus; }
   virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
  private:
 };
@@ -52,6 +143,19 @@ class AST_NODE_NAME_FOR_TYPE(assign) : public ASTNode {
   virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
  private:
 };
+class AST_NODE_NAME_FOR_TYPE(bitand) : public ASTNode {
+ public:
+  AST_NODE_NAME_FOR_TYPE(bitand)(Token token)
+  : ASTNode(token)
+  {}
+  virtual std::ostream& dump(std::ostream& o) override {
+    o << AST_NODE_NAME_FOR_TYPE_STR(bitand) " { " << m_token << " }";
+    return o;
+  }
+  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_bitand; }
+  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
+ private:
+};
 class AST_NODE_NAME_FOR_TYPE(num) : public ASTNode {
  public:
   AST_NODE_NAME_FOR_TYPE(num)(Token token)
@@ -75,19 +179,6 @@ class AST_NODE_NAME_FOR_TYPE(return) : public ASTNode {
     return o;
   }
   virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_return; }
-  virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
- private:
-};
-class AST_NODE_NAME_FOR_TYPE(delim) : public ASTNode {
- public:
-  AST_NODE_NAME_FOR_TYPE(delim)(Token token)
-  : ASTNode(token)
-  {}
-  virtual std::ostream& dump(std::ostream& o) override {
-    o << AST_NODE_NAME_FOR_TYPE_STR(delim) " { " << m_token << " }";
-    return o;
-  }
-  virtual ASTNodeType type() override { return ASTNodeType::ASTNodeType_delim; }
   virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) override;
  private:
 };

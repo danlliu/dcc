@@ -23,7 +23,14 @@ NO_IR(assign);
 NO_IR(delim);
 NO_IR(return);
 NO_IR(plus);
+NO_IR(minus);
 NO_IR(multiply);
+NO_IR(divide);
+NO_IR(bitand);
+NO_IR(bitor);
+NO_IR(bitxor);
+NO_IR(lshift);
+NO_IR(rshift);
 
 TO_IR(num)  {
   int value = std::stoi(this->m_token.value);
@@ -39,6 +46,12 @@ TO_IR(ident) {
 TO_IR(Expr) {
   if (size(m_children) == 1)
     return m_children[0]->convertToIR(vsm, prev);
+  if (size(m_children) == 2) {
+    // - num
+    IRResult num = m_children[1]->convertToIR(vsm, prev);
+    num.result.constValue *= -1;
+    return num;
+  }
   if (size(m_children) != 3)
     UNREACHABLE("Expr with incorrect number of children encountered during IR generation");
   auto [lhsIR, lhsVR] = m_children[0]->convertToIR(vsm, prev);

@@ -18,6 +18,10 @@ int main(int argc, char** argv) {
   std::string contents{std::istream_iterator<char>(inFile), std::istream_iterator<char>()};
   Tokenizer t(contents);
   auto res = t.tokenize();
+  for (auto t : res)
+    std::cout << t << " ";
+  std::cout << std::endl;
+
   Parser p(res);
   auto parsed = std::move(p.parse());
   parsed->dump(std::cout);

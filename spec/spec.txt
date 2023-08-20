@@ -2,15 +2,30 @@
 delim ;
 return return
 assign =
-num \-?[0-9]+
+num [0-9]+
 ident [a-zA-Z_]+
 plus \+
+minus \-
 multiply \*
+divide /
+bitand &
+bitor \|
+bitxor \^
+lshift <<
+rshift >>
 %%
 # Precedence and associativity
 # <terminal> <precedence:unsigned> <associativity:left|right|none>
-plus 1 left
-multiply 2 left
+# Order inspired by C operator precedence
+bitand 0 left
+bitor 0 left
+bitxor 0 left
+lshift 1 left
+rshift 1 left
+plus 2 left
+minus 2 left
+multiply 3 left
+divide 3 left
 %%
 # Non-terminals
 Block
@@ -28,5 +43,13 @@ AssignStatement -> ident assign Expr delim
 ReturnStatement -> return Expr delim
 Expr -> num
 Expr -> ident
+Expr -> minus num
 Expr -> Expr plus Expr
+Expr -> Expr minus Expr
 Expr -> Expr multiply Expr
+Expr -> Expr divide Expr
+Expr -> Expr bitand Expr
+Expr -> Expr bitor Expr
+Expr -> Expr bitxor Expr
+Expr -> Expr lshift Expr
+Expr -> Expr rshift Expr

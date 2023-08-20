@@ -6,14 +6,14 @@ INC := -I src
 SPEC := spec/spec.txt
 
 DCC_SRCS := $(wildcard src/*.cpp)
-DCC_GENERATED_HEADERS := src/generated/generated_parser.h src/generated/generated_terminals.h
+DCC_GENERATED_HEADERS := src/generated/generated_ast_type.h src/generated/generated_ast.h src/generated/generated_parser.h src/generated/generated_terminals.h
 
 DCC_EXE := dcc
 
-$(DCC_EXE): $(DCC_SRCS) gen $(DCC_GENERATED_HEADERS)
+$(DCC_EXE): $(DCC_SRCS) $(DCC_GENERATED_HEADERS)
 	$(CXX) $(INC) -o $@ $(DCC_SRCS)
 
-$(DCC_EXE)_debug: $(DCC_SRCS) gen $(DCC_GENERATED_HEADERS)
+$(DCC_EXE)_debug: $(DCC_SRCS) $(DCC_GENERATED_HEADERS)
 	$(CXX_DBG) $(INC) -o $@ $(DCC_SRCS)
 
 yadda: yadda.cpp
@@ -22,9 +22,10 @@ yadda: yadda.cpp
 yadda_debug: yadda.cpp
 	$(CXX_DBG) $(INC) -o $@ $^
 
-.PHONY: gen
-gen: yadda spec/spec.txt
+src/generated/generated_parser.h: yadda spec/spec.txt
 	./yadda $(SPEC)
+
+generated: src/generated/generated_parser.h
 
 debug: $(DCC_EXE)_debug
 
