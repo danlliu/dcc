@@ -553,6 +553,17 @@ void YaddaParser::parse() {
       }
     }
 
+    parser << "if (false) {\n";
+    for (auto [nonterminal, _] : m_nonterminals) {
+      parser << "gotoTable" << nonterminal << ": \n";
+      parser << "    if (false) {}\n";
+      for (auto [curr, target] : gotoLookup[nonterminal])
+        parser << "    else if (STATE() == " << curr << ") PUSHSTATE(" << target << ");\n";
+      parser << "goto endGotoTable;\n";
+    }
+    parser << "endGotoTable:;\n";
+    parser << "}\n";
+
     // Generate macro parser
     parser << "if (false) {}\n";
     for (size_t i = 0; i < size(lrTable); ++i) {
@@ -569,42 +580,18 @@ void YaddaParser::parse() {
           auto rule = m_productionRules[static_cast<size_t>(ruleNum)];
           parser << "  else if (IS_EOF()) {\n";
           parser << "    REDUCE(" << rule.lhs << ", " << size(rule.tokens) << ");\n";
-          parser << "    if (false) {}\n";
-          for (auto [curr, target] : gotoLookup[rule.lhs])
-            parser << "    else if (STATE() == " << curr << ") PUSHSTATE(" << target << ");\n";
+          parser << "    goto gotoTable" << rule.lhs << ";\n";
           parser << "  }\n";
         } else {
           auto rule = m_productionRules[static_cast<size_t>(ruleNum)];
           parser << "  else if (PEEK().type == TOKENTYPE(" << type << ")) {\n";
           parser << "    REDUCE(" << rule.lhs << ", " << size(rule.tokens) << ");\n";
-          parser << "    if (false) {}\n";
-          for (auto [curr, target] : gotoLookup[rule.lhs])
-            parser << "    else if (STATE() == " << curr << ") PUSHSTATE(" << target << ");\n";
+          parser << "    goto gotoTable" << rule.lhs << ";\n";
           parser << "  }\n";
         }
       }
       parser << "  else { if (IS_EOF()) " << (row.eof ? "SUCCESS()" : "FAILURE()") << "; }\n";
       parser << "}\n";
-
-      // if (row.reduce != -1) {
-      //   // Reduce
-      //   auto rule = m_productionRules[static_cast<size_t>(row.reduce)];
-      //   parser << "  REDUCE(" << rule.lhs << ", " << size(rule.tokens) << ");\n";
-      //   // Goto table
-      //   parser << "  if (false) {}\n";
-      //   for (auto [curr, target] : gotoLookup[rule.lhs])
-      //     parser << "  else if (STATE() == " << curr << ") PUSHSTATE(" << target << ");\n";
-      // } else {
-      //   parser << "  if (IS_EOF()) " << (row.eof ? "SUCCESS()" : "FAILURE()") << ";\n";
-      //   // Shift maybe
-      //   parser << "  if (false) {}\n";
-      //   for (auto [type, target] : row.jumps) {
-      //     parser << "  else if (PEEK().type == TOKENTYPE(" << type << ")) { SHIFT(" << type << "); PUSHSTATE("
-      //     << target << ");}\n";
-      //   }
-      //   parser << "  else FAILURE();\n";
-      // }
-      // parser << "}\n";
     }
     parser << "else UNREACHABLE(\"Invalid parser state\");\n";
   }

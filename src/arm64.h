@@ -58,6 +58,8 @@ inline int evaluateOperator(int lhs, Operator op, int rhs) {
 }
 }
 
+std::ostream& operator<<(std::ostream& os, dlang::Operator op);
+
 struct ARM64Register {
   bool isConst;
   unsigned reg;
@@ -96,5 +98,24 @@ struct ARM64Return {
 };
 
 OUTPUT_TYPE(ARM64Return);
+
+struct ARM64Label {
+  unsigned value;
+};
+
+OUTPUT_TYPE(ARM64Label);
+
+struct ARM64UnconditionalJump {
+  ARM64Label target;
+};
+
+OUTPUT_TYPE(ARM64UnconditionalJump);
+
+struct ARM64BranchIfNonZero {
+  ARM64Register value;
+  ARM64Label target;
+};
+
+OUTPUT_TYPE(ARM64BranchIfNonZero);
 
 #endif

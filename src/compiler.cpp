@@ -1,5 +1,6 @@
 
 #include "compiler.h"
+
 #include <memory>
 
 #include "arm64.h"
@@ -14,14 +15,25 @@ using namespace dlang;
 // IR Conversion
 
 #define NO_IR_NODE prev
-#define NO_IR(t) IRResult dlang::AST_NODE_NAME_FOR_TYPE(t)::convertToIR(VariableScopeManager&, std::weak_ptr<IRNode> prev) { return {prev, {0, 0}}; }
-#define TO_IR(t) IRResult dlang::AST_NODE_NAME_FOR_TYPE(t)::convertToIR(VariableScopeManager& vsm, std::weak_ptr<IRNode> prev)
+#define NO_VR \
+  {}
+#define NO_IR(t)                                                                                              \
+  IRResult dlang::AST_NODE_NAME_FOR_TYPE(t)::convertToIR(VariableScopeManager&, std::weak_ptr<IRNode> prev) { \
+    return {                                                                                                  \
+      prev, {0, 0}                                                                                          \
+    };                                                                                                        \
+  }
+#define TO_IR(t) \
+  IRResult dlang::AST_NODE_NAME_FOR_TYPE(t)::convertToIR(VariableScopeManager& vsm, std::weak_ptr<IRNode> prev)
 
 // Terminals
 
 NO_IR(assign);
 NO_IR(delim);
 NO_IR(return);
+NO_IR(if);
+NO_IR(lbrace);
+NO_IR(rbrace);
 NO_IR(plus);
 NO_IR(minus);
 NO_IR(multiply);
@@ -31,42 +43,53 @@ NO_IR(bitor);
 NO_IR(bitxor);
 NO_IR(lshift);
 NO_IR(rshift);
+NO_IR(lparen);
+NO_IR(rparen);
 
-TO_IR(num)  {
+TO_IR(num) {
   int value = std::stoi(this->m_token.value);
-  return {NO_IR_NODE, {0, value}};
+  return {
+    NO_IR_NODE, {0, value}
+  };
 }
 
 TO_IR(ident) {
-  return {NO_IR_NODE, {vsm.lookup(this->m_token.value)}};
+  return { NO_IR_NODE, { vsm.lookup(this->m_token.value) } };
 }
 
 // Non-terminals
 
 TO_IR(Expr) {
-  if (size(m_children) == 1)
-    return m_children[0]->convertToIR(vsm, prev);
+  if (size(m_children) == 1) return m_children[0]->convertToIR(vsm, prev);
   if (size(m_children) == 2) {
     // - num
     IRResult num = m_children[1]->convertToIR(vsm, prev);
     num.result.constValue *= -1;
     return num;
   }
-  if (size(m_children) != 3)
-    UNREACHABLE("Expr with incorrect number of children encountered during IR generation");
-  auto [lhsIR, lhsVR] = m_children[0]->convertToIR(vsm, prev);
-  auto [rhsIR, rhsVR] = m_children[2]->convertToIR(vsm, lhsIR);
-  auto op = toOperatorStruct(m_children[1]->token());
-  // constant folding
-  if (lhsVR.isConst() && rhsVR.isConst()) {
-    prev.lock()->next.reset();
-    return {NO_IR_NODE, {0, evaluateOperator(lhsVR.constValue, op, rhsVR.constValue)}};
+  if (size(m_children) != 3) UNREACHABLE("Expr with incorrect number of children encountered during IR generation");
+  if (m_children[0]->type() == ASTNodeType_lparen) {
+    // ( Expr )
+    auto expr = m_children[1]->convertToIR(vsm, prev);
+    return expr;
+  } else {
+    // Expr (op) Expr
+    auto [lhsIR, lhsVR] = m_children[0]->convertToIR(vsm, prev);
+    auto [rhsIR, rhsVR] = m_children[2]->convertToIR(vsm, lhsIR);
+    auto op = toOperatorStruct(m_children[1]->token());
+    // constant folding
+    if (lhsVR.isConst() && rhsVR.isConst()) {
+      prev.lock()->next.reset();
+      return {
+        NO_IR_NODE, {0, evaluateOperator(lhsVR.constValue, op, rhsVR.constValue)}
+      };
+    }
+    // at least one side a variable
+    auto dest = vsm.addTemp();
+    auto assign = std::make_shared<IROperationNode>(dest, lhsVR, op, rhsVR);
+    rhsIR.lock()->next = assign;
+    return { assign, dest };
   }
-  // at least one side a variable
-  auto dest = vsm.addTemp();
-  auto assign = std::make_shared<IROperationNode>(dest, lhsVR, op, rhsVR);
-  rhsIR.lock()->next = assign;
-  return {assign, dest};
 }
 
 TO_IR(Block) {
@@ -98,14 +121,38 @@ TO_IR(AssignStatement) {
   auto defVR = vsm.add(def);
   auto assignIRNode = std::make_shared<IRAssignNode>(defVR, useVR);
   useIR.lock()->next = assignIRNode;
-  return {assignIRNode};
+  return { assignIRNode, NO_VR };
 }
 
 TO_IR(ReturnStatement) {
   auto [resIR, resVR] = m_children[1]->convertToIR(vsm, prev);
   auto returnIRNode = std::make_shared<IRReturnNode>(resVR);
   resIR.lock()->next = returnIRNode;
-  return {returnIRNode, resVR};
+  return { returnIRNode, NO_VR };
+}
+
+TO_IR(IfStatement) {
+  // 0 = if
+  // 1 = lparen
+  // 2 = Expr
+  auto [conditionIR, conditionVR] = m_children[2]->convertToIR(vsm, prev);
+  // 3 = rparen
+  // Create the IRConditionalNode
+  auto conditionalNode = std::make_shared<IRConditionalNode>(conditionVR);
+  conditionIR.lock()->next = conditionalNode;
+  // 4 = lbrace
+  // 5 = Block
+  auto ifCondition = std::make_shared<IRBlockStartNode>();
+  conditionalNode->trueIR = ifCondition;
+  auto [trueIR, trueVR] = m_children[5]->convertToIR(vsm, ifCondition);
+  auto endIf = std::make_shared<IRBlockEndNode>();
+  trueIR.lock()->next = endIf;
+
+  // rbrace
+  auto mergeNode = std::make_shared<IRMergeNode>();
+  endIf->next = mergeNode;
+  conditionalNode->next = mergeNode;
+  return { mergeNode, NO_VR };
 }
 
 std::shared_ptr<dlang::IRNode> Compiler::convertToIR(std::unique_ptr<dlang::ASTNode>&& ast) {

@@ -1,41 +1,23 @@
 
 #include "ir.h"
+
+#include "arm64.h"
 #include "compiler_context.h"
+#include "label_manager.h"
+#include "macros.h"
 #include "register_allocator.h"
 
 using namespace dlang;
 
 unsigned IRNode::NEXT_ID = 0;
 
-std::ostream& operator<<(std::ostream& os, Operator op) {
-  switch (op) {
-  case PLUS:
-    return os << "+";
-  case MINUS:
-    return os << "-";
-  case MULTIPLY:
-    return os << "*";
-  case DIVIDE:
-    return os << "/";
-  case AND:
-    return os << "&";
-  case OR:
-    return os << "|";
-  case XOR:
-    return os << "^";
-  case LSHIFT:
-    return os << "<<";
-  case RSHIFT:
-    return os << ">>";
-  }
-}
+#define UPDATE_LIVENESS            \
+  do {                             \
+    livenessPass = true;           \
+    ra.addLivenessState(liveness); \
+  } while (0)
 
-#define UPDATE_LIVENESS do { \
-  livenessPass = true; \
-  ra.addLivenessState(liveness); \
-} while (0)
-
-void IRStartNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator& ra) {
+void IRStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
   if (livenessPass) return;
   if (next) {
     next->makeLivenessPass(vsm, ra);
@@ -46,7 +28,63 @@ void IRStartNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator&
   UPDATE_LIVENESS;
 }
 
-void IRAssignNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator& ra) {
+void IRBlockStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
+  if (livenessPass) return;
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+    liveness = next->getLiveness();
+  } else {
+    liveness.resize(vsm.getNumVariables());
+  }
+  UPDATE_LIVENESS;
+}
+
+void IRBlockEndNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
+  if (livenessPass) return;
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+    liveness = next->getLiveness();
+  } else {
+    liveness.resize(vsm.getNumVariables());
+  }
+  UPDATE_LIVENESS;
+}
+
+void IRMergeNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator &ra) {
+  if (livenessPass) return;
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+    liveness = next->getLiveness();
+  } else {
+    liveness.resize(vsm.getNumVariables());
+  }
+  UPDATE_LIVENESS;
+}
+
+void IRConditionalNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
+  if (livenessPass) return;
+  liveness.resize(vsm.getNumVariables());
+  if (trueIR) {
+    trueIR->makeLivenessPass(vsm, ra);
+    liveness |= trueIR->getLiveness();
+  }
+  else {
+    UNREACHABLE("Conditional must have a true path");
+  }
+  if (falseIR) {
+    falseIR->makeLivenessPass(vsm, ra);
+    liveness |= falseIR->getLiveness();
+  } else {
+    // Here, we know that trueIR connects via BlockEnd to next (the MergeNode),
+    // so we don't have to worry about calling makeLivenessPass
+    liveness |= next->getLiveness();
+  }
+  // no need to do next since it's covered by at least one path above
+  liveness.setLive(condition.id);
+  UPDATE_LIVENESS;
+}
+
+void IRAssignNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
   if (livenessPass) return;
   if (next) {
     next->makeLivenessPass(vsm, ra);
@@ -62,7 +100,7 @@ void IRAssignNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator
   UPDATE_LIVENESS;
 }
 
-void IROperationNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator& ra) {
+void IROperationNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
   if (livenessPass) return;
   if (next) {
     next->makeLivenessPass(vsm, ra);
@@ -92,36 +130,71 @@ void IRReturnNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator
 
 // To assembly
 
-void IRStartNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
-  if (next)
-    next->toAssembly(ra, o);
+void IRStartNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
+  if (next) next->toAssembly(ra, o);
 }
 
-void IRAssignNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
+void IRBlockStartNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
+  if (next) next->toAssembly(ra, o);
+}
+
+void IRBlockEndNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
+  // Stop here
+}
+
+void IRMergeNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
+  if (next) next->toAssembly(ra, o);
+}
+
+void IRConditionalNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
+  if (falseIR) {
+    // Generate two labels: one for false, one for end
+    auto falseLabel = LabelManager::nextLabel();
+    auto endLabel = LabelManager::nextLabel();
+    // Conditional
+    o << ARM64BranchIfNonZero { condition.toReg(ra), { falseLabel } };
+    // First if
+    trueIR->toAssembly(ra, o);
+    o << ARM64UnconditionalJump { endLabel };
+    o << ARM64Label { falseLabel } << "\n";
+    // Then else
+    falseIR->toAssembly(ra, o);
+    o << ARM64Label { endLabel } << "\n";
+    next->toAssembly(ra, o);
+  } else {
+    auto endLabel = LabelManager::nextLabel();
+    // Conditional
+    o << ARM64BranchIfNonZero { condition.toReg(ra), { endLabel } };
+    // First if
+    trueIR->toAssembly(ra, o);
+    o << ARM64Label { endLabel } << "\n";
+    next->toAssembly(ra, o);
+  }
+}
+
+void IRAssignNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
   if (next && !next->getLiveness().isLive(lhs.id)) {
     // dead on arrival
     if (next) next->toAssembly(ra, o);
     return;
   }
 
-  o << ARM64Mov{ lhs.toReg(ra), rhs.toReg(ra) };
-  if (next)
-    next->toAssembly(ra, o);
+  o << ARM64Mov { lhs.toReg(ra), rhs.toReg(ra) };
+  if (next) next->toAssembly(ra, o);
 }
 
-void IROperationNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
+void IROperationNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
   if (next && !next->getLiveness().isLive(dest.id)) {
     // dead on arrival
     if (next) next->toAssembly(ra, o);
     return;
   }
 
-  o << ARM64Operation{ dest.toReg(ra), lhs.toReg(ra), op, rhs.toReg(ra) };
-  if (next)
-    next->toAssembly(ra, o);
+  o << ARM64Operation { dest.toReg(ra), lhs.toReg(ra), op, rhs.toReg(ra) };
+  if (next) next->toAssembly(ra, o);
 }
 
-void IRReturnNode::toAssembly(const RegisterAllocator& ra, std::ostream& o) {
-  o << ARM64Mov{ ARM64ReturnRegister, val.toReg(ra) };
+void IRReturnNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
+  o << ARM64Mov { ARM64ReturnRegister, val.toReg(ra) };
   o << ARM64Return {};
 }

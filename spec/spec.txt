@@ -1,6 +1,9 @@
 # Terminals
 delim ;
 return return
+if if
+lbrace \{
+rbrace \}
 assign =
 num [0-9]+
 ident [a-zA-Z_]+
@@ -13,6 +16,8 @@ bitor \|
 bitxor \^
 lshift <<
 rshift >>
+lparen \(
+rparen \)
 %%
 # Precedence and associativity
 # <terminal> <precedence:unsigned> <associativity:left|right|none>
@@ -26,12 +31,15 @@ plus 2 left
 minus 2 left
 multiply 3 left
 divide 3 left
+lparen 4 left
+rparen 4 left
 %%
 # Non-terminals
 Block
 Statement
 AssignStatement
 ReturnStatement
+IfStatement
 Expr
 %%
 # Production rules
@@ -39,11 +47,14 @@ Block -> Statement
 Block -> Block Statement
 Statement -> AssignStatement
 Statement -> ReturnStatement
+Statement -> IfStatement
 AssignStatement -> ident assign Expr delim
 ReturnStatement -> return Expr delim
+IfStatement -> if lparen Expr rparen lbrace Block rbrace
 Expr -> num
 Expr -> ident
 Expr -> minus num
+Expr -> lparen Expr rparen
 Expr -> Expr plus Expr
 Expr -> Expr minus Expr
 Expr -> Expr multiply Expr

@@ -1,11 +1,36 @@
 
 #include "arm64.h"
 
+using namespace dlang;
+
 std::ostream& operator<<(std::ostream& os, ARM64Register reg) {
   if (reg.isConst)
     return os << "#" << reg.value;
   else
     return os << "x" << reg.reg;
+}
+
+std::ostream& operator<<(std::ostream& os, Operator op) {
+  switch (op) {
+  case PLUS:
+    return os << "+";
+  case MINUS:
+    return os << "-";
+  case MULTIPLY:
+    return os << "*";
+  case DIVIDE:
+    return os << "/";
+  case AND:
+    return os << "&";
+  case OR:
+    return os << "|";
+  case XOR:
+    return os << "^";
+  case LSHIFT:
+    return os << "<<";
+  case RSHIFT:
+    return os << ">>";
+  }
 }
 
 OUTPUT_TYPE(ARM64Mov) {
@@ -79,4 +104,16 @@ OUTPUT_TYPE(ARM64Operation) {
 
 OUTPUT_TYPE(ARM64Return) {
   return os << "bl lr\n";
+}
+
+OUTPUT_TYPE(ARM64Label) {
+  return os << ".L" << instr.value;
+}
+
+OUTPUT_TYPE(ARM64UnconditionalJump) {
+  return os << "b " << instr.target << "\n";
+}
+
+OUTPUT_TYPE(ARM64BranchIfNonZero) {
+  return os << "cbnz " << instr.target << "\n";
 }
