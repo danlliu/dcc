@@ -11,14 +11,19 @@ using namespace dlang;
 
 unsigned IRNode::NEXT_ID = 0;
 
+#define RUN_AND_SET_LIVENESS \
+  do { \
+    if (livenessPass) return; \
+    livenessPass = true; \
+  } while (0)
+
 #define UPDATE_LIVENESS            \
   do {                             \
-    livenessPass = true;           \
     ra.addLivenessState(liveness); \
   } while (0)
 
 void IRStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -29,7 +34,7 @@ void IRStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator&
 }
 
 void IRBlockStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -40,7 +45,7 @@ void IRBlockStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAlloc
 }
 
 void IRBlockEndNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -50,8 +55,22 @@ void IRBlockEndNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocat
   UPDATE_LIVENESS;
 }
 
-void IRMergeNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator &ra) {
-  if (livenessPass) return;
+void IRLoopEndNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator &ra) {
+  RUN_AND_SET_LIVENESS;
+  liveness.resize(vsm.getNumVariables());
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+    liveness |= next->getLiveness();
+  }
+  if (auto l = loop.lock()) {
+    l->makeLivenessPass(vsm, ra);
+    liveness |= l->getLiveness();
+  }
+  UPDATE_LIVENESS;
+}
+
+void IRMergeNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -62,13 +81,12 @@ void IRMergeNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator 
 }
 
 void IRConditionalNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   liveness.resize(vsm.getNumVariables());
   if (trueIR) {
     trueIR->makeLivenessPass(vsm, ra);
     liveness |= trueIR->getLiveness();
-  }
-  else {
+  } else {
     UNREACHABLE("Conditional must have a true path");
   }
   if (falseIR) {
@@ -84,8 +102,24 @@ void IRConditionalNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllo
   UPDATE_LIVENESS;
 }
 
+void IRLoopNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator &ra) {
+  RUN_AND_SET_LIVENESS;
+  // IRBlockEndNode at end of loop will look at this liveness
+  liveness.resize(vsm.getNumVariables());
+  liveness.setLive(conditionVR.id);
+  if (body) {
+    body->makeLivenessPass(vsm, ra);
+    liveness |= body->getLiveness();
+  }
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+    liveness |= next->getLiveness();
+  }
+  UPDATE_LIVENESS;
+}
+
 void IRAssignNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -101,7 +135,7 @@ void IRAssignNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator
 }
 
 void IROperationNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -117,7 +151,7 @@ void IROperationNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAlloca
 }
 
 void IRReturnNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
-  if (livenessPass) return;
+  RUN_AND_SET_LIVENESS;
   if (next) {
     next->makeLivenessPass(vsm, ra);
     liveness = next->getLiveness();
@@ -138,8 +172,12 @@ void IRBlockStartNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) 
   if (next) next->toAssembly(ra, o);
 }
 
-void IRBlockEndNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
+void IRBlockEndNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
   // Stop here
+}
+
+void IRLoopEndNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
+  // Stop here, we handle all the loop logic in LoopNode.
 }
 
 void IRMergeNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
@@ -170,6 +208,23 @@ void IRConditionalNode::toAssembly(RegisterAllocator const& ra, std::ostream& o)
     o << ARM64Label { endLabel } << "\n";
     next->toAssembly(ra, o);
   }
+}
+
+void IRLoopNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
+  // Generate two labels: one for start, one for end
+  auto startLabel = LabelManager::nextLabel();
+  auto endLabel = LabelManager::nextLabel();
+  o << ARM64Label { startLabel } << "\n";
+  // Condition
+  conditionIR->toAssembly(ra, o);
+  o << ARM64BranchIfZero { conditionVR.toReg(ra), { endLabel } };
+  // Body
+  body->toAssembly(ra, o);
+  // End body
+  o << ARM64UnconditionalJump { { startLabel } };
+  // End label
+  o << ARM64Label { endLabel } << "\n";
+  next->toAssembly(ra, o);
 }
 
 void IRAssignNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {

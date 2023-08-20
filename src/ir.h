@@ -20,7 +20,7 @@
       os << " > ";                \
     } else                        \
       os << "{ " #X " ";          \
-    os << "[" << id << "] ";     \
+    os << "[" << id << "] ";      \
   } while (0)
 
 namespace dlang {
@@ -86,7 +86,7 @@ class IRBlockStartNode : public IRNode {
   private:
   virtual void dump_impl(std::ostream& o) override {
     DUMP_WITH_LIVENESS(BlockStart, o);
-    o << id << " }";
+    o << " }";
     if (next) {
       o << " -> ";
       next->dump(o);
@@ -105,7 +105,23 @@ class IRBlockEndNode : public IRNode {
   private:
   virtual void dump_impl(std::ostream& o) override {
     DUMP_WITH_LIVENESS(BlockEnd, o);
-    o << id << " }";
+    o << " }";
+  }
+};
+
+class IRLoopEndNode : public IRNode {
+  public:
+  IRLoopEndNode()
+      : IRNode() {}
+  std::weak_ptr<IRNode> loop;
+
+  virtual void toAssembly(RegisterAllocator const& ra, std::ostream& o) override;
+  virtual void makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) override;
+
+  private:
+  virtual void dump_impl(std::ostream& o) override {
+    DUMP_WITH_LIVENESS(LoopEnd, o);
+    o << " }";
   }
 };
 
@@ -120,7 +136,7 @@ class IRMergeNode : public IRNode {
   private:
   virtual void dump_impl(std::ostream& o) override {
     DUMP_WITH_LIVENESS(Merge, o);
-    o << id << " }";
+    o << " }";
     if (next) {
       o << " -> ";
       next->dump(o);
@@ -144,7 +160,8 @@ class IRConditionalNode : public IRNode {
   private:
   virtual void dump_impl(std::ostream& o) override {
     DUMP_WITH_LIVENESS(Conditional, o);
-    o << id << " }";
+    o << condition;
+    o << " }";
     if (trueIR) {
       o << " -IF-> ";
       trueIR->dump(o);
@@ -155,6 +172,35 @@ class IRConditionalNode : public IRNode {
     }
     if (next) {
       o << " -ENDIF-> ";
+      next->dump(o);
+    }
+  }
+};
+
+class IRLoopNode : public IRNode {
+  public:
+  IRLoopNode()
+      : IRNode() {}
+  std::shared_ptr<IRNode> conditionIR;
+  VirtualRegister conditionVR;
+  std::shared_ptr<IRNode> body;
+  std::shared_ptr<IRNode> next;
+
+  virtual void toAssembly(RegisterAllocator const& ra, std::ostream& o) override;
+  virtual void makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) override;
+
+  private:
+  virtual void dump_impl(std::ostream& o) override {
+    DUMP_WITH_LIVENESS(Loop, o);
+    conditionIR->dump(o);
+    o << " => " << conditionVR;
+    o << " }";
+    if (body) {
+      o << " -BODY-> ";
+      body->dump(o);
+    }
+    if (next) {
+      o << " -END LOOP-> ";
       next->dump(o);
     }
   }
@@ -175,7 +221,7 @@ class IRAssignNode : public IRNode {
   private:
   virtual void dump_impl(std::ostream& o) override {
     DUMP_WITH_LIVENESS(Assign, o);
-    o << lhs << ", " << rhs << " }";
+    o << lhs << " = " << rhs << " }";
     if (next) {
       o << " -> ";
       next->dump(o);

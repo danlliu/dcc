@@ -1,5 +1,6 @@
 
 #include "arm64.h"
+
 #include "macros.h"
 
 using namespace dlang;
@@ -54,8 +55,7 @@ OUTPUT_TYPE(ARM64Operation) {
       if (instr.rhs.isConst) UNREACHABLE("Found two constants in operation... should have been folded");
       os << "sub " << instr.dest << ", " << instr.rhs << ", " << instr.lhs << "\n";
       return os << "neg " << instr.dest << ", " << instr.dest << "\n";
-    }
-    else
+    } else
       return os << "sub " << instr.dest << ", " << instr.lhs << ", " << instr.rhs << "\n";
   case dlang::MULTIPLY:
     if (instr.lhs.isConst) {
@@ -119,6 +119,10 @@ OUTPUT_TYPE(ARM64UnconditionalJump) {
   return os << "b " << instr.target << "\n";
 }
 
+OUTPUT_TYPE(ARM64BranchIfZero) {
+  return os << "cbz " << instr.value << ", " << instr.target << "\n";
+}
+
 OUTPUT_TYPE(ARM64BranchIfNonZero) {
-  return os << "cbnz " << instr.target << "\n";
+  return os << "cbnz " << instr.value << ", " << instr.target << "\n";
 }

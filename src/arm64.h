@@ -4,22 +4,13 @@
 
 #include <bitset>
 #include <iostream>
+
 #include <stdint.h>
 
 #include "tokens.h"
 
 namespace dlang {
-enum Operator {
-  PLUS,
-  MINUS,
-  MULTIPLY,
-  DIVIDE,
-  AND,
-  OR,
-  XOR,
-  LSHIFT,
-  RSHIFT
-};
+enum Operator { PLUS, MINUS, MULTIPLY, DIVIDE, AND, OR, XOR, LSHIFT, RSHIFT };
 
 inline Operator toOperatorStruct(Token tok) {
   if (tok.value == "+") return PLUS;
@@ -35,7 +26,7 @@ inline Operator toOperatorStruct(Token tok) {
 }
 
 inline int evaluateOperator(int lhs, Operator op, int rhs) {
-  switch(op) {
+  switch (op) {
   case PLUS:
     return lhs + rhs;
   case MINUS:
@@ -58,7 +49,7 @@ inline int evaluateOperator(int lhs, Operator op, int rhs) {
     UNREACHABLE("Invalid ARM64Operation operation type");
   }
 }
-}
+}   // namespace dlang
 
 std::ostream& operator<<(std::ostream& os, dlang::Operator op);
 
@@ -68,11 +59,14 @@ struct ARM64Register {
   int value;
 };
 
-#define ARM64ReturnRegister ARM64Register { false, 0 }
+#define ARM64ReturnRegister \
+  ARM64Register { false, 0 }
 #define ARM64TempRegister ARM64ReturnRegister
 #define ARM64NumFreeRegs 16
-#define REG(x) { false, x }
-#define CONST(x) { true, 0, x }
+#define REG(x) \
+  { false, x }
+#define CONST(x) \
+  { true, 0, x }
 
 using ARMRegisterUsed = std::bitset<32>;
 
@@ -96,8 +90,7 @@ struct ARM64Operation {
 
 OUTPUT_TYPE(ARM64Operation);
 
-struct ARM64Return {
-};
+struct ARM64Return {};
 
 OUTPUT_TYPE(ARM64Return);
 
@@ -112,6 +105,13 @@ struct ARM64UnconditionalJump {
 };
 
 OUTPUT_TYPE(ARM64UnconditionalJump);
+
+struct ARM64BranchIfZero {
+  ARM64Register value;
+  ARM64Label target;
+};
+
+OUTPUT_TYPE(ARM64BranchIfZero);
 
 struct ARM64BranchIfNonZero {
   ARM64Register value;

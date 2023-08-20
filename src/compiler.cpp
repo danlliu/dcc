@@ -33,6 +33,7 @@ NO_IR(delim);
 NO_IR(return);
 NO_IR(if);
 NO_IR(else);
+NO_IR(while);
 NO_IR(lbrace);
 NO_IR(rbrace);
 NO_IR(plus);
@@ -166,12 +167,12 @@ TO_IR(IfElseStatement) {
   auto conditionalNode = std::make_shared<IRConditionalNode>(conditionVR);
   conditionIR.lock()->next = conditionalNode;
   // 4 = lbrace
+  // 5 = Block
   auto ifCondition = std::make_shared<IRBlockStartNode>();
   conditionalNode->trueIR = ifCondition;
   auto [trueIR, trueVR] = m_children[5]->convertToIR(vsm, ifCondition);
   auto endIf = std::make_shared<IRBlockEndNode>();
   trueIR.lock()->next = endIf;
-  // 5 = Block
   // 6 = rbrace
   // 7 = else
   // 8 = lbrace
@@ -186,6 +187,33 @@ TO_IR(IfElseStatement) {
   endIf->next = mergeNode;
   endElse->next = mergeNode;
   conditionalNode->next = mergeNode;
+  return { mergeNode, NO_VR };
+}
+
+TO_IR(WhileStatement) {
+  // 0 = while
+  // 1 = lparen
+  // 2 = Expr
+  auto conditionStart = std::make_shared<IRBlockStartNode>();
+  auto [conditionIR, conditionVR] = m_children[2]->convertToIR(vsm, conditionStart);
+  // 3 = rparen
+  // Create the IRLoopNode
+  auto loopNode = std::make_shared<IRLoopNode>();
+  loopNode->conditionIR = conditionStart;
+  loopNode->conditionVR = conditionVR;
+  prev.lock()->next = loopNode;
+  // 4 = lbrace
+  // 5 = Block
+  auto body = std::make_shared<IRBlockStartNode>();
+  loopNode->body = body;
+  auto [bodyIR, bodyVR] = m_children[5]->convertToIR(vsm, body);
+  auto end = std::make_shared<IRLoopEndNode>();
+  bodyIR.lock()->next = end;
+  end->loop = loopNode;
+  // 6 = rbrace
+  auto mergeNode = std::make_shared<IRMergeNode>();
+  end->next = mergeNode;
+  loopNode->next = mergeNode;
   return { mergeNode, NO_VR };
 }
 

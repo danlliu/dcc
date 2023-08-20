@@ -1,11 +1,14 @@
 # Terminals
 delim ;
 return return
+# Control flow
 if if
 else else
+while while
 lbrace \{
 rbrace \}
 assign =
+# Arithmetic/bitwise operations
 num [0-9]+
 ident [a-zA-Z_]+
 plus \+
@@ -42,6 +45,7 @@ AssignStatement
 ReturnStatement
 IfStatement
 IfElseStatement
+WhileStatement
 Expr
 %%
 # Production rules
@@ -51,10 +55,12 @@ Statement -> AssignStatement
 Statement -> ReturnStatement
 Statement -> IfStatement
 Statement -> IfElseStatement
+Statement -> WhileStatement
 AssignStatement -> ident assign Expr delim
 ReturnStatement -> return Expr delim
 IfStatement -> if lparen Expr rparen lbrace Block rbrace
 IfElseStatement -> if lparen Expr rparen lbrace Block rbrace else lbrace Block rbrace
+WhileStatement -> while lparen Expr rparen lbrace Block rbrace
 Expr -> num
 Expr -> ident
 Expr -> minus num

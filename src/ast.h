@@ -22,7 +22,7 @@ struct IRResult {
 #include "generated/generated_ast_type.h"
 
 class ASTNode {
- public:
+  public:
   ASTNode() {};
   virtual ~ASTNode() {};
 
@@ -31,16 +31,18 @@ class ASTNode {
   virtual IRResult convertToIR(VariableScopeManager&, std::weak_ptr<dlang::IRNode>) = 0;
 
   inline void addChild(std::unique_ptr<ASTNode>&& p) { m_children.emplace_back(std::move(p)); }
-  const std::vector<std::unique_ptr<ASTNode>>& children() const { return m_children; }
-  inline const Token& token() const { return m_token; }
- protected:
-  ASTNode(Token tok) : m_token(tok) {}
+  std::vector<std::unique_ptr<ASTNode>> const& children() const { return m_children; }
+  inline Token const& token() const { return m_token; }
+
+  protected:
+  ASTNode(Token tok)
+      : m_token(tok) {}
   std::vector<std::unique_ptr<ASTNode>> m_children;
   Token m_token;
 };
 
 #include "generated/generated_ast.h"
 
-};
+};   // namespace dlang
 
 #endif

@@ -14,21 +14,18 @@
 #include "tokens.h"
 
 class Tokenizer {
- public:
+  public:
   Tokenizer(std::string contents)
-    : m_contents(begin(contents), end(contents))
-    , m_curr(m_contents.cbegin())
-    {};
+      : m_contents(begin(contents), end(contents))
+      , m_curr(m_contents.cbegin()) {};
 
   using TokenResult = std::optional<dlang::Token>;
   using TokenStream = std::vector<dlang::Token>;
-  
+
   TokenStream tokenize();
 
- private:
-  inline bool isWhitespace(char c) {
-    return c == ' ' || c == '\t' || c == '\n';
-  }
+  private:
+  inline bool isWhitespace(char c) { return c == ' ' || c == '\t' || c == '\n'; }
 
   void skipWhitespace();
 
@@ -41,7 +38,6 @@ class Tokenizer {
   std::deque<char> m_contents;
   std::stack<ParserState> states;
   std::deque<char>::const_iterator m_curr;
-
 };
 
 #endif

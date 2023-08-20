@@ -8,16 +8,15 @@
 #include "register_allocator.h"
 
 class Compiler {
- public:
-  Compiler()
-    {}
+  public:
+  Compiler() {}
 
   void compile(std::unique_ptr<dlang::ASTNode>&& ast, std::ostream& asm_out) {
     auto res = convertToIR(std::move(ast));
     compileIRToAssembly(std::move(res), asm_out);
   }
 
- private:
+  private:
   std::shared_ptr<dlang::IRNode> convertToIR(std::unique_ptr<dlang::ASTNode>&& ast);
   void compileIRToAssembly(std::shared_ptr<dlang::IRNode>&& ir, std::ostream& asm_out);
 

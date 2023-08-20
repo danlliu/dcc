@@ -12,15 +12,13 @@
 #include "tokens.h"
 
 int main(int argc, char** argv) {
-  if (argc != 2)
-    ERR_AND_EXIT("Usage: " << argv[0] << " <file.dlang>");
+  if (argc != 2) ERR_AND_EXIT("Usage: " << argv[0] << " <file.dlang>");
   auto inFile = std::ifstream(argv[1]);
-  std::string contents{std::istream_iterator<char>(inFile), std::istream_iterator<char>()};
+  std::string contents { std::istream_iterator<char>(inFile), std::istream_iterator<char>() };
   Tokenizer t(contents);
   auto res = t.tokenize();
   std::cerr << INFO("Tokens: ") << std::endl;
-  for (auto t : res)
-    std::cerr << t << " ";
+  for (auto t : res) std::cerr << t << " ";
   std::cerr << std::endl << std::endl;
 
   std::cerr << INFO("Parsed AST: ") << std::endl;
