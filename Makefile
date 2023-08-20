@@ -26,8 +26,8 @@ yadda_debug: yadda.cpp
 	$(CXX_DBG) $(INC) -o $@ $^
 
 $(GENERATED_FLAG_FILE): yadda spec/spec.txt
-	./yadda $(SPEC)
 	@mkdir -p src/generated
+	./yadda $(SPEC)
 	@touch $(GENERATED_FLAG_FILE)
 
 debug: $(DCC_EXE)_debug
