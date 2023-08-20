@@ -20,10 +20,10 @@ class Parser {
  private:
 
   inline void pushASTNode(std::unique_ptr<dlang::ASTNode>&& n) { m_parseTrees.emplace_front(std::move(n)); }
-  inline std::unique_ptr<dlang::ASTNode>&& popASTNode() {
+  inline std::unique_ptr<dlang::ASTNode> popASTNode() {
     std::unique_ptr<dlang::ASTNode> node = std::move(m_parseTrees.front());
     m_parseTrees.pop_front();
-    return std::move(node);
+    return node;
   }
 
   inline dlang::Token peek() {
