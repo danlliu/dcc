@@ -32,6 +32,9 @@ $(GENERATED_FLAG_FILE): yadda spec/spec.txt
 
 debug: $(DCC_EXE)_debug
 
+runtime/main.o: runtime/main.cpp
+	$(CXX) -o $@ -c $^
+
 .PHONY: clean
 clean:
 	@rm -f $(DCC_EXE)

@@ -37,12 +37,19 @@ std::ostream& operator<<(std::ostream& os, Operator op) {
   }
 }
 
+void ARM64Prelude(std::ostream &os) {
+  os << ".align 4\n";
+  os << ".global _dlang_start\n";
+  os << "_dlang_start:\n";
+}
+
 OUTPUT_TYPE(ARM64Mov) {
   if (!instr.rhs.isConst && instr.lhs.reg == instr.rhs.reg) return os;
-  return os << "mov " << instr.lhs << ", " << instr.rhs << "\n";
+  return os << "  mov " << instr.lhs << ", " << instr.rhs << "\n";
 }
 
 OUTPUT_TYPE(ARM64Operation) {
+  os << "  ";
   switch (instr.op) {
   case dlang::PLUS:
     if (instr.lhs.isConst) {
@@ -108,21 +115,25 @@ OUTPUT_TYPE(ARM64Operation) {
 }
 
 OUTPUT_TYPE(ARM64Return) {
-  return os << "bl lr\n";
+  return os << "  br lr\n";
 }
 
 OUTPUT_TYPE(ARM64Label) {
   return os << ".L" << instr.value;
 }
 
+OUTPUT_TYPE(ARM64LabelDefinition) {
+  return os << instr.label << ":\n";
+}
+
 OUTPUT_TYPE(ARM64UnconditionalJump) {
-  return os << "b " << instr.target << "\n";
+  return os << "  b " << instr.target << "\n";
 }
 
 OUTPUT_TYPE(ARM64BranchIfZero) {
-  return os << "cbz " << instr.value << ", " << instr.target << "\n";
+  return os << "  cbz " << instr.value << ", " << instr.target << "\n";
 }
 
 OUTPUT_TYPE(ARM64BranchIfNonZero) {
-  return os << "cbnz " << instr.value << ", " << instr.target << "\n";
+  return os << "  cbnz " << instr.value << ", " << instr.target << "\n";
 }
