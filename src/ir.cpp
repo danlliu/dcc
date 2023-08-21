@@ -190,22 +190,22 @@ void IRConditionalNode::toAssembly(RegisterAllocator const& ra, std::ostream& o)
     auto falseLabel = LabelManager::nextLabel();
     auto endLabel = LabelManager::nextLabel();
     // Conditional
-    o << ARM64BranchIfNonZero { condition.toReg(ra), { falseLabel } };
+    o << ARM64BranchIfZero { condition.toReg(ra), { falseLabel } };
     // First if
     trueIR->toAssembly(ra, o);
     o << ARM64UnconditionalJump { endLabel };
-    o << ARM64Label { falseLabel } << "\n";
+    o << ARM64LabelDefinition { falseLabel };
     // Then else
     falseIR->toAssembly(ra, o);
-    o << ARM64Label { endLabel } << "\n";
+    o << ARM64LabelDefinition { endLabel };
     next->toAssembly(ra, o);
   } else {
     auto endLabel = LabelManager::nextLabel();
     // Conditional
-    o << ARM64BranchIfNonZero { condition.toReg(ra), { endLabel } };
+    o << ARM64BranchIfZero { condition.toReg(ra), { endLabel } };
     // First if
     trueIR->toAssembly(ra, o);
-    o << ARM64Label { endLabel } << "\n";
+    o << ARM64LabelDefinition { endLabel };
     next->toAssembly(ra, o);
   }
 }
@@ -214,7 +214,7 @@ void IRLoopNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
   // Generate two labels: one for start, one for end
   auto startLabel = LabelManager::nextLabel();
   auto endLabel = LabelManager::nextLabel();
-  o << ARM64Label { startLabel } << "\n";
+  o << ARM64LabelDefinition { startLabel };
   // Condition
   conditionIR->toAssembly(ra, o);
   o << ARM64BranchIfZero { conditionVR.toReg(ra), { endLabel } };
@@ -223,7 +223,7 @@ void IRLoopNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
   // End body
   o << ARM64UnconditionalJump { { startLabel } };
   // End label
-  o << ARM64Label { endLabel } << "\n";
+  o << ARM64LabelDefinition { endLabel };
   next->toAssembly(ra, o);
 }
 

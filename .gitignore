@@ -6,3 +6,6 @@ src/generated/
 dcc
 dcc_debug
 yadda
+# runtime files
+a.out
+tmp

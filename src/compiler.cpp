@@ -237,5 +237,6 @@ void Compiler::compileIRToAssembly(std::shared_ptr<dlang::IRNode>&& ir, std::ost
   }
   std::cerr << std::endl;
 
+  ARM64Prelude(asm_out);
   ir->toAssembly(ra, asm_out);
 }
