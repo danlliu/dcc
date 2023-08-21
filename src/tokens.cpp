@@ -3,6 +3,6 @@
 
 using namespace dlang;
 
-std::ostream& operator<<(std::ostream& os, const Token& tok) {
+std::ostream& operator<<(std::ostream& os, Token const& tok) {
   return os << tok.value;
 }

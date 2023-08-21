@@ -2,23 +2,20 @@
 #ifndef _DCC_PARSER_H
 #define _DCC_PARSER_H
 
-#include "ast.h"
-
 #include <deque>
 
+#include "ast.h"
 #include "tokenizer.h"
 #include "tokens.h"
 
 class Parser {
- public:
-  Parser(const Tokenizer::TokenStream& tokens)
-    : m_tokens(tokens)
-    {}
+  public:
+  Parser(Tokenizer::TokenStream const& tokens)
+      : m_tokens(tokens) {}
 
   std::unique_ptr<dlang::ASTNode>&& parse();
 
- private:
-
+  private:
   inline void pushASTNode(std::unique_ptr<dlang::ASTNode>&& n) { m_parseTrees.emplace_front(std::move(n)); }
   inline std::unique_ptr<dlang::ASTNode> popASTNode() {
     std::unique_ptr<dlang::ASTNode> node = std::move(m_parseTrees.front());
@@ -26,13 +23,9 @@ class Parser {
     return node;
   }
 
-  inline dlang::Token peek() {
-    return *m_curr;
-  }
+  inline dlang::Token peek() { return *m_curr; }
 
-  inline void shift() {
-    m_curr++;
-  }
+  inline void shift() { m_curr++; }
 
   inline void reduce(std::unique_ptr<dlang::ASTNode>&& p, size_t k) {
     std::stack<std::unique_ptr<dlang::ASTNode>> inversion;
@@ -48,9 +41,7 @@ class Parser {
     pushASTNode(std::move(p));
   }
 
-  inline bool eof() {
-    return m_curr == end(m_tokens);
-  }
+  inline bool eof() { return m_curr == end(m_tokens); }
 
   Tokenizer::TokenStream m_tokens;
   Tokenizer::TokenStream::iterator m_curr;

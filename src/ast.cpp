@@ -3,6 +3,4 @@
 
 #include <iostream>
 
-namespace dlang {
-
-}
+namespace dlang {}

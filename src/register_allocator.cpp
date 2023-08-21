@@ -6,7 +6,7 @@
 
 #include "compiler_context.h"
 
-void RegisterAllocator::addLivenessState(const dlang::LivenessManager &manager) {
+void RegisterAllocator::addLivenessState(dlang::LivenessManager const& manager) {
   for (unsigned i = 0; i < m_numVirtRegisters; ++i) {
     if (manager.isLive(i)) {
       ++m_numTimesUsed[i];
@@ -29,14 +29,14 @@ void RegisterAllocator::allocateRegisters() {
   }
 
   // Go in order of most used to least used
-  auto Comparator = [&](unsigned lhs, unsigned rhs) {
-    return m_numTimesUsed[lhs] < m_numTimesUsed[rhs];
-  };
+  auto Comparator = [&](unsigned lhs, unsigned rhs) { return m_numTimesUsed[lhs] < m_numTimesUsed[rhs]; };
   std::vector<unsigned> virtRegs(m_numVirtRegisters);
   std::iota(begin(virtRegs), end(virtRegs), 0);
-  std::priority_queue<unsigned, std::vector<unsigned>, decltype(Comparator)> pq(begin(virtRegs), end(virtRegs), Comparator);
+  std::priority_queue<unsigned, std::vector<unsigned>, decltype(Comparator)> pq(begin(virtRegs), end(virtRegs),
+                                                                                Comparator);
   while (size(pq)) {
-    auto next = pq.top(); pq.pop();
+    auto next = pq.top();
+    pq.pop();
     std::vector<bool> used(m_numVirtRegisters, false);
     for (auto n : neighbors[next]) {
       if (m_registerAllocations[n] != -1) used[static_cast<unsigned>(m_registerAllocations[n])] = true;
