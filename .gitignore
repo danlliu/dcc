@@ -9,3 +9,5 @@ yadda
 # runtime files
 a.out
 tmp
+# local stuff
+.vscode/
