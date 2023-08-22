@@ -12,20 +12,18 @@
 
 #include "compiler.h"
 #include "macros.h"
+#include "option.h"
 #include "parser.h"
 #include "tokenizer.h"
 #include "tokens.h"
 
-struct Option {
-  static std::string outputFile;
-  static bool dumpTokens;
-  static bool dumpAST;
-  static bool dumpIR;
-  static bool dumpRegisterAllocation;
-};
+std::string Option::outputFile = "out.txt";
+bool Option::dumpTokens = false;
+bool Option::dumpAST = false;
+bool Option::dumpIR = false;
+bool Option::dumpRegisterAllocation = false;
 
 int main(int argc, char** argv) {
-  Option options;
   if (argc < 2) ERR_AND_EXIT("Usage: " << argv[0] << "(options) <file.dlang>");
   int choice;
   int option_index = 0;
@@ -41,21 +39,21 @@ int main(int argc, char** argv) {
   while ((choice = getopt_long(argc, argv, "o", long_options, &option_index)) != -1) {
     switch (choice) {
       case 'o':
-        options.outputFile = optarg;
+        Option::outputFile = optarg;
         break;
       case DUMP_TOKENS:
-        options.dumpTokens = true;
+        Option::dumpTokens = true;
         break;
       case DUMP_AST: {
-        options.dumpAST = true;
+        Option::dumpAST = true;
         break;
       }
       case DUMP_IR: {
-        options.dumpIR = true;
+        Option::dumpIR = true;
         break;
       }
       case DUMP_REGISTER_ALLOCATION: {
-        options.dumpRegisterAllocation = true;
+        Option::dumpRegisterAllocation = true;
         break;
       }
       default:
