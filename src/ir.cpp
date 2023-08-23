@@ -33,6 +33,26 @@ void IRStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator&
   UPDATE_LIVENESS;
 }
 
+void IRFunctionStartNode::makeLivenessPass(VariableScopeManager &, RegisterAllocator &) {
+  RUN_AND_SET_LIVENESS;
+  liveness.resize(vsm.getNumVariables());
+  ra = {ARM64NumFreeRegs, vsm.getNumVariables()};
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+  }
+  ra.allocateRegisters();
+  UPDATE_LIVENESS;
+}
+
+void IRFunctionEndNode::makeLivenessPass(VariableScopeManager &vsm, RegisterAllocator &ra) {
+  RUN_AND_SET_LIVENESS;
+  liveness.resize(vsm.getNumVariables());
+  if (next) {
+    next->makeLivenessPass(vsm, ra);
+  }
+  UPDATE_LIVENESS;
+}
+
 void IRBlockStartNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) {
   RUN_AND_SET_LIVENESS;
   if (next) {
@@ -165,6 +185,15 @@ void IRReturnNode::makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator
 // To assembly
 
 void IRStartNode::toAssembly(RegisterAllocator const& ra, std::ostream& o) {
+  if (next) next->toAssembly(ra, o);
+}
+
+void IRFunctionStartNode::toAssembly(const RegisterAllocator &, std::ostream &o) {
+  o << ARM64FunctionLabel { m_name };
+  if (next) next->toAssembly(ra, o);
+}
+
+void IRFunctionEndNode::toAssembly(const RegisterAllocator &ra, std::ostream &o) {
   if (next) next->toAssembly(ra, o);
 }
 

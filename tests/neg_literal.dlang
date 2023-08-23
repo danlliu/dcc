@@ -1,3 +1,5 @@
-a = 5;
-b = -1 * a;
-return b;
+main() {
+  a = 5;
+  b = -1 * a;
+  return b;
+}

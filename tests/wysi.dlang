@@ -1,2 +1,4 @@
-wysi = 727;
-return wysi;
+main() {
+  wysi = 727;
+  return wysi;
+}

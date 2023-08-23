@@ -1,3 +1,5 @@
-a = 1;
-a = a + 1;
-return a;
+main() {
+  a = 1;
+  a = a + 1;
+  return a;
+}

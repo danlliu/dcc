@@ -1,6 +1,8 @@
-a = 5;
-b = 1;
-if (a) {
-  b = 3;
+main() {
+  a = 5;
+  b = 1;
+  if (a) {
+    b = 3;
+  }
+  return b;
 }
-return b;

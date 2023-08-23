@@ -39,6 +39,9 @@ lparen 4 left
 rparen 4 left
 %%
 # Non-terminals
+Program
+FunctionDefinition
+FunctionParams
 Block
 Statement
 AssignStatement
@@ -49,6 +52,12 @@ WhileStatement
 Expr
 %%
 # Production rules
+Program -> FunctionDefinition
+Program -> FunctionDefinition Program
+FunctionDefinition -> ident lparen rparen lbrace Block rbrace
+FunctionDefinition -> ident lparen FunctionParams rparen lbrace Block rbrace
+FunctionParams -> ident
+FunctionParams -> FunctionParams ident
 Block -> Statement
 Block -> Block Statement
 Statement -> AssignStatement

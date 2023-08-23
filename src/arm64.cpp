@@ -37,12 +37,6 @@ std::ostream& operator<<(std::ostream& os, Operator op) {
   }
 }
 
-void ARM64Prelude(std::ostream &os) {
-  os << ".align 4\n";
-  os << ".global _dlang_start\n";
-  os << "_dlang_start:\n";
-}
-
 OUTPUT_TYPE(ARM64Mov) {
   if (!instr.rhs.isConst && instr.lhs.reg == instr.rhs.reg) return os;
   return os << "  mov " << instr.lhs << ", " << instr.rhs << "\n";
@@ -61,7 +55,7 @@ OUTPUT_TYPE(ARM64Operation) {
     if (instr.lhs.isConst) {
       if (instr.rhs.isConst) UNREACHABLE("Found two constants in operation... should have been folded");
       os << "sub " << instr.dest << ", " << instr.rhs << ", " << instr.lhs << "\n";
-      return os << "neg " << instr.dest << ", " << instr.dest << "\n";
+      return os << "  neg " << instr.dest << ", " << instr.dest << "\n";
     } else
       return os << "sub " << instr.dest << ", " << instr.lhs << ", " << instr.rhs << "\n";
   case dlang::MULTIPLY:
@@ -74,7 +68,7 @@ OUTPUT_TYPE(ARM64Operation) {
     if (instr.lhs.isConst) {
       if (instr.rhs.isConst) UNREACHABLE("Found two constants in operation... should have been folded");
       os << "mov " << ARM64TempRegister << ", " << instr.lhs << "\n";
-      return os << "sdiv " << instr.dest << ", " << ARM64TempRegister << ", " << instr.rhs << "\n";
+      return os << "  sdiv " << instr.dest << ", " << ARM64TempRegister << ", " << instr.rhs << "\n";
     } else
       return os << "sdiv " << instr.dest << ", " << instr.lhs << ", " << instr.rhs << "\n";
   case dlang::AND:
@@ -120,6 +114,10 @@ OUTPUT_TYPE(ARM64Return) {
 
 OUTPUT_TYPE(ARM64Label) {
   return os << ".L" << instr.value;
+}
+
+OUTPUT_TYPE(ARM64FunctionLabel) {
+  return os << ".align 4\n" << "_dlang_" << instr.name << ":\n";
 }
 
 OUTPUT_TYPE(ARM64LabelDefinition) {

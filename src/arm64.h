@@ -74,8 +74,6 @@ using ARMRegisterUsed = std::bitset<32>;
 
 std::ostream& operator<<(std::ostream& os, ARM64Register reg);
 
-void ARM64Prelude(std::ostream& os);
-
 struct ARM64Mov {
   ARM64Register lhs;
   ARM64Register rhs;
@@ -101,6 +99,12 @@ struct ARM64Label {
 };
 
 OUTPUT_TYPE(ARM64Label);
+
+struct ARM64FunctionLabel {
+  std::string name;
+};
+
+OUTPUT_TYPE(ARM64FunctionLabel);
 
 struct ARM64LabelDefinition {
   ARM64Label label;

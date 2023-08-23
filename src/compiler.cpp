@@ -48,6 +48,8 @@ NO_IR(rshift);
 NO_IR(lparen);
 NO_IR(rparen);
 
+NO_IR(FunctionParams);
+
 TO_IR(num) {
   int value = std::stoi(this->m_token.value);
   return {
@@ -60,6 +62,42 @@ TO_IR(ident) {
 }
 
 // Non-terminals
+
+TO_IR(Program) {
+  if (size(m_children) == 1) return m_children[0]->convertToIR(vsm, prev);
+  if (size(m_children) == 2) {
+    IRResult fn_left = m_children[0]->convertToIR(vsm, prev);
+    IRResult statement = m_children[1]->convertToIR(vsm, fn_left.ir_last);
+    return statement;
+  }
+  UNREACHABLE("Program with no children or more than 2 children encountered during IR generation");
+}
+
+TO_IR(FunctionDefinition) {
+  std::shared_ptr<IRFunctionStartNode> functionStart;
+  IRResult block;
+  if (size(m_children) == 6) {
+    // without args
+    functionStart = std::make_shared<IRFunctionStartNode>(m_children[0]->token().value, std::vector<std::string>{});
+    block = m_children[4]->convertToIR(functionStart->vsm, functionStart);
+  } else if (size(m_children) == 7) {
+    // with args
+    // walk args
+    std::vector<std::string> params;
+    ASTNode_FunctionParams* ptr = dynamic_cast<ASTNode_FunctionParams*>(m_children[2].get());
+    while (size(ptr->children()) == 2) {
+      params.push_back(ptr->children()[1]->token().value);
+      ptr = dynamic_cast<ASTNode_FunctionParams*>(ptr->children()[0].get());
+    }
+    params.push_back(ptr->children()[1]->token().value);
+    functionStart = std::make_shared<IRFunctionStartNode>(m_children[0]->token().value, params);
+    block = m_children[5]->convertToIR(functionStart->vsm, functionStart);
+  }
+  prev.lock()->next = functionStart;
+  auto functionEnd = std::make_shared<IRFunctionEndNode>();
+  block.ir_last.lock()->next = functionEnd;
+  return {functionEnd, NO_VR};
+}
 
 TO_IR(Expr) {
   if (size(m_children) == 1) return m_children[0]->convertToIR(vsm, prev);
@@ -237,6 +275,5 @@ void Compiler::compileIRToAssembly(std::shared_ptr<dlang::IRNode>&& ir, std::ost
   }
   std::cerr << std::endl;
 
-  ARM64Prelude(asm_out);
   ir->toAssembly(ra, asm_out);
 }

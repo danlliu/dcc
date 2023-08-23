@@ -75,6 +75,50 @@ class IRStartNode : public IRNode {
   }
 };
 
+class IRFunctionStartNode : public IRNode {
+  public:
+  IRFunctionStartNode(std::string name, std::vector<std::string> params)
+      : IRNode()
+      , m_name(name)
+      , m_params(params) {}
+
+  std::string m_name;
+  std::vector<std::string> m_params;
+
+  VariableScopeManager vsm;
+  RegisterAllocator ra = {ARM64NumFreeRegs, 0};
+
+  virtual void toAssembly(RegisterAllocator const& ra, std::ostream& o) override;
+  virtual void makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) override;
+
+  private:
+  virtual void dump_impl(std::ostream& o) override {
+    DUMP_WITH_LIVENESS(FunctionStart, o);
+    o << " (";
+    for (auto p : m_params) o << " " << p;
+    o << " ) }";
+    if (next) {
+      o << " -> ";
+      next->dump(o);
+    }
+  }
+};
+
+class IRFunctionEndNode : public IRNode {
+  public:
+  IRFunctionEndNode()
+      : IRNode() {}
+
+  virtual void toAssembly(RegisterAllocator const& ra, std::ostream& o) override;
+  virtual void makeLivenessPass(VariableScopeManager& vsm, RegisterAllocator& ra) override;
+
+  private:
+  virtual void dump_impl(std::ostream& o) override {
+    DUMP_WITH_LIVENESS(FunctionEnd, o);
+    o << " }";
+  }
+};
+
 class IRBlockStartNode : public IRNode {
   public:
   IRBlockStartNode()
