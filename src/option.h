@@ -1,4 +1,5 @@
 #include <string>
+#include <iostream>
 
 struct Option {
   static std::string outputFile;
@@ -7,3 +8,5 @@ struct Option {
   static bool dumpIR;
   static bool dumpRegisterAllocation;
 };
+
+void getOptions(int argc, char** argv);
