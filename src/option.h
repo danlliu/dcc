@@ -1,5 +1,4 @@
 #include <string>
-#include <iostream>
 
 struct Option {
   static std::string outputFile;

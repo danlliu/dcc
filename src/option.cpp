@@ -6,6 +6,7 @@
 #include "option.h"
 
 #include <getopt.h>
+#include <iostream>
 #include <string>
 
 std::string Option::outputFile = "out.txt";
@@ -52,4 +53,3 @@ void getOptions(int argc, char** argv) {
     }
   }
 }
-

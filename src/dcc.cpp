@@ -14,7 +14,7 @@
 int main(int argc, char** argv) {
   if (argc < 2) ERR_AND_EXIT("Usage: " << argv[0] << " (options) <file.dlang>");
   getOptions(argc, argv);
-  auto inFile = std::ifstream(argv[1]);
+  auto inFile = std::ifstream(argv[argc - 1]);
   std::string contents { std::istream_iterator<char>(inFile), std::istream_iterator<char>() };
   Tokenizer t(contents);
   auto res = t.tokenize();
