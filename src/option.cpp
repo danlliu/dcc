@@ -27,7 +27,7 @@ void getOptions(int argc, char** argv) {
     {nullptr,                       0,                 nullptr, '\0'}
   };
 
-  while ((choice = getopt_long(argc, argv, "o", long_options, &option_index)) != -1) {
+  while ((choice = getopt_long(argc, argv, "o:", long_options, &option_index)) != -1) {
     switch (choice) {
       case 'o':
         Option::outputFile = optarg;
