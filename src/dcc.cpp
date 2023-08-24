@@ -1,4 +1,3 @@
-
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -7,13 +6,15 @@
 
 #include "compiler.h"
 #include "macros.h"
+#include "option.h"
 #include "parser.h"
 #include "tokenizer.h"
 #include "tokens.h"
 
 int main(int argc, char** argv) {
-  if (argc != 2) ERR_AND_EXIT("Usage: " << argv[0] << " <file.dlang>");
-  auto inFile = std::ifstream(argv[1]);
+  if (argc < 2) ERR_AND_EXIT("Usage: " << argv[0] << " (options) <file.dlang>");
+  getOptions(argc, argv);
+  auto inFile = std::ifstream(argv[argc - 1]);
   std::string contents { std::istream_iterator<char>(inFile), std::istream_iterator<char>() };
   Tokenizer t(contents);
   auto res = t.tokenize();
